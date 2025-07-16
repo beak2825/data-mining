@@ -1,4 +1,3 @@
-ï»¿
 var Roblox = Roblox || {};
 
 Roblox.BundleDetector = (function() {
