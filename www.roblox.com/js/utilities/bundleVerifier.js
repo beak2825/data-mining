@@ -1,8 +1,6 @@
 var Roblox = Roblox || {};
 
 Roblox.BundleDetector = (function() {
-	var isMetricsApiEnabled = Roblox.BundleVerifierConstants && Roblox.BundleVerifierConstants.isMetricsApiEnabled;
-
 	var loadStates = {
 		loadSuccess: "loadSuccess",
 		loadFailure: "loadFailure",
@@ -19,9 +17,7 @@ Roblox.BundleDetector = (function() {
 		unknown: "CDNBundleError_unknown",
 		cssError: "CssBundleError",
 		jsError: "JavascriptBundleError",
-		jsFileError: "JsFileExecutionError",
-		resourceError: "ResourcePerformance_Error",
-		resourceLoaded: "ResourcePerformance_Loaded"
+		jsFileError: "JsFileExecutionError"
 	};
 
 	return {
@@ -85,8 +81,7 @@ Roblox.BundleDetector = (function() {
 		},
 
 		reportMetrics: function(bundleUrl, bundleName, loadState, bundleContentType, cdnProviderName) {
-			if (!isMetricsApiEnabled ||
-				!bundleUrl ||
+			if (!bundleUrl ||
 				!loadState ||
 				!loadStates.hasOwnProperty(loadState) ||
 				!bundleContentType ||
@@ -110,22 +105,14 @@ Roblox.BundleDetector = (function() {
 			}));
 		},
 
-		logToEphemeralStatistics: function(sequenceName, value) {
-			var deviceType = Roblox.BundleVerifierConstants.deviceType;
-			sequenceName += "_" + deviceType;
-
-			var xhr = new XMLHttpRequest();
-			xhr.open('POST', '/game/report-stats?name=' + sequenceName + "&value=" + value, true);
-			xhr.withCredentials = true;
-			xhr.send();
-		},
-
 		logToEphemeralCounter: function(ephemeralCounterName) {
 			var deviceType = Roblox.BundleVerifierConstants.deviceType;
 			ephemeralCounterName += "_" + deviceType;
+			var metricsApiUrl = (Roblox.EnvironmentUrls && Roblox.EnvironmentUrls.metricsApi) || "https://metrics.roblox.com";
+
 			//log to ephemeral counters - taken from ET.js
 			var xhr = new XMLHttpRequest();
-			xhr.open('POST', '/game/report-event?name=' + ephemeralCounterName, true);
+			xhr.open('POST', metricsApiUrl + '/v1/games/report-event?name=' + ephemeralCounterName, true);
 			xhr.withCredentials = true;
 			xhr.send();
 		},
@@ -194,19 +181,6 @@ Roblox.BundleDetector = (function() {
 				xhr.send();
 			} else {
 				this.logToEventStream(failedBundle, ctx);
-			}
-		},
-
-		reportResourceError: function(resourceName) {
-			var ephemeralCounterName = this.counterNames.resourceError + "_" + resourceName;
-			this.logToEphemeralCounter(ephemeralCounterName);
-		},
-
-		reportResourceLoaded: function(resourceName) {
-			var loadTimeInMs = this.getLoadTime();
-			if (loadTimeInMs) {
-				var sequenceName = this.counterNames.resourceLoaded + "_" + resourceName;
-				this.logToEphemeralStatistics(sequenceName, loadTimeInMs);
 			}
 		},
 
